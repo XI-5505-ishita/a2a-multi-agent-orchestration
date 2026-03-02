@@ -1,28 +1,40 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from orchestrator_agent.client import call_agent
+from orchestrator_agent.core import plan_execution, call_agent, AGENTS
 
 app = FastAPI(title="Orchestrator Agent")
-
-SUMMARIZER_URL = "http://localhost:8101"
-TRANSLATOR_URL = "http://localhost:8102"
 
 
 class ExecuteRequest(BaseModel):
     input_text: str
-    task: str
 
 
 @app.post("/execute")
 async def execute(request: ExecuteRequest):
 
-    if request.task == "summarize":
-        result = await call_agent(SUMMARIZER_URL, request.input_text)
+    execution_plan = plan_execution(request.input_text)
 
-    elif request.task == "translate":
-        result = await call_agent(TRANSLATOR_URL, request.input_text)
+    if not execution_plan:
+        return {"error": "Could not determine execution plan"}
 
-    else:
-        return {"error": "Invalid task"}
+    current_input = request.input_text
 
-    return {"final_output": result}
+    for agent_name in execution_plan:
+
+        selected_agent = next(
+            (agent for agent in AGENTS if agent["name"] == agent_name),
+            None
+        )
+
+        if not selected_agent:
+            return {"error": f"Agent {agent_name} not found"}
+
+        current_input = await call_agent(
+            selected_agent["url"],
+            current_input
+        )
+
+    return {
+        "execution_plan": execution_plan,
+        "final_output": current_input
+    }

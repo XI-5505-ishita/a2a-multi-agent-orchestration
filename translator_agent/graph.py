@@ -1,41 +1,82 @@
 from dotenv import load_dotenv
 load_dotenv()
-from typing import TypedDict
+
+from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode
+from langgraph.graph.message import add_messages
+
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
 
-from langfuse import observe, get_client
-langfuse=get_client()
+from langfuse import observe
 from langfuse.langchain import CallbackHandler
+
 langfuse_handler = CallbackHandler()
 
-llm = ChatOpenAI(model="gpt-4o-mini",
-                 callbacks=[langfuse_handler])
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0,
+    callbacks=[langfuse_handler]
+)
 
+# STATE
 
-class GraphState(TypedDict):
-    input_text: str
-    translated_text: str
+class AgentState(TypedDict):
+    messages: Annotated[list, add_messages]
 
+# =========================
+# TOOLS
+# =========================
 
-def translate_text(state: GraphState):
-    prompt = f"Translate this to Hindi:\n{state['input_text']}"
+@tool
+def translate_to_hindi(text: str) -> str:
+    """Translate the given text into Hindi."""
+    prompt = f"Translate the following text into Hindi:\n\n{text}"
     response = llm.invoke([HumanMessage(content=prompt)])
-    return {"translated_text": response.content}
+    return response.content
 
+tools = [translate_to_hindi]
 
-builder = StateGraph(GraphState)
-builder.add_node("translate_text", translate_text)
+llm_with_tools = llm.bind_tools(tools)
 
-builder.set_entry_point("translate_text")
-builder.add_edge("translate_text", END)
+# =========================
+# AGENT NODE
+# =========================
+
+def agent_node(state: AgentState):
+    response = llm_with_tools.invoke(state["messages"])
+    return {"messages": [response]}
+
+# =========================
+# GRAPH
+# =========================
+
+builder = StateGraph(AgentState)
+
+builder.add_node("agent", agent_node)
+builder.add_node("tools", ToolNode(tools))
+
+builder.set_entry_point("agent")
+
+builder.add_conditional_edges(
+    "agent",
+    lambda state: "tools" if state["messages"][-1].tool_calls else END
+)
+
+builder.add_edge("tools", "agent")
 
 graph = builder.compile()
 
+# =========================
+# RUN FUNCTION
+# =========================
+
 @observe()
 def run_translator(text: str):
-    
-    result = graph.invoke({"input_text": text})
-        
-    return result["translated_text"]
+    result = graph.invoke({
+        "messages": [HumanMessage(content=text)]
+    })
+    return result["messages"][-1].content
+
