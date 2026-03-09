@@ -22,19 +22,12 @@ async def execute(request: ExecuteRequest):
     for agent_name in execution_plan:
 
         selected_agent = next(
-            (agent for agent in AGENTS if agent["name"] == agent_name),
-            None
+            (agent for agent in AGENTS if agent["name"] == agent_name), None
         )
 
         if not selected_agent:
             return {"error": f"Agent {agent_name} not found"}
 
-        current_input = await call_agent(
-            selected_agent["url"],
-            current_input
-        )
+        current_input = await call_agent(selected_agent["url"], current_input)
 
-    return {
-        "execution_plan": execution_plan,
-        "final_output": current_input
-    }
+    return {"execution_plan": execution_plan, "final_output": current_input}

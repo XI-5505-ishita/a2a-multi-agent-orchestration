@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import os
@@ -14,24 +15,16 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", "http://127.0.0.1:8101")
 TRANSLATOR_URL = os.getenv("TRANSLATOR_URL", "http://127.0.0.1:8102")
-ANALYZER_URL = os.getenv("ANALYZER_URL", "http://127.0.0.1:8103" )
+ANALYZER_URL = os.getenv("ANALYZER_URL", "http://127.0.0.1:8103")
 
 AGENTS = [
     {
-        "name": "SummarizerAgent", 
+        "name": "SummarizerAgent",
         "url": SUMMARIZER_URL,
-        "capabilities": ["summarization"]
+        "capabilities": ["summarization"],
     },
-    {
-        "name": "TranslatorAgent",
-        "url": TRANSLATOR_URL,
-        "capabilities": ["translation"]
-    },
-    {
-        "name":"AnalyzerAgent",
-        "url": ANALYZER_URL,
-        "capabilities": ["analysis"]
-    }
+    {"name": "TranslatorAgent", "url": TRANSLATOR_URL, "capabilities": ["translation"]},
+    {"name": "AnalyzerAgent", "url": ANALYZER_URL, "capabilities": ["analysis"]},
 ]
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=api_key)
@@ -71,9 +64,9 @@ async def call_agent(base_url, text):
     async with httpx.AsyncClient() as client:
 
         create_resp = await client.post(
-            f"{base_url}/create-task",
-            json={"input_text": str(text)}
+            f"{base_url}/create-task", json={"input_text": str(text)}
         )
+        print(create_resp.json())
 
         create_data = create_resp.json()
         task_id = create_data.get("task_id") or create_data.get("id")
@@ -82,9 +75,9 @@ async def call_agent(base_url, text):
             return create_data
 
         while True:
-            status_resp = await client.get(
-                f"{base_url}/task/{task_id}"
-            )
+            status_resp = await client.get(f"{base_url}/tasks/{task_id}")
+            print("STATUS CODE:", status_resp.status_code)
+            print("RAW RESPONSE:", status_resp.text)
 
             status_data = status_resp.json()
 
