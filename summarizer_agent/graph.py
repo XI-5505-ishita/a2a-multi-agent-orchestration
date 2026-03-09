@@ -69,12 +69,16 @@ from langchain_core.tools import tool
 
 from langfuse import observe
 from langfuse.langchain import CallbackHandler
+import os
 
 langfuse_handler = CallbackHandler()
+
+api_key= os.getenv("OPENAI_API_KEY")
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0,
+    api_key=api_key,
     callbacks=[langfuse_handler]
 )
 
@@ -90,7 +94,7 @@ class AgentState(TypedDict):
 # =========================
 
 @tool
-def summarize_text(text: str) -> str:
+def summarize_text(text: str):
     """Summarize the given text clearly and concisely."""
     prompt = f"""
 Summarize the following text.

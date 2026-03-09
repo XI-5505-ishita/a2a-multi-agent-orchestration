@@ -12,12 +12,16 @@ from langchain_core.tools import tool
 
 from langfuse import observe
 from langfuse.langchain import CallbackHandler
+import os
 
 langfuse_handler = CallbackHandler()
+
+api_key = os.getenv("OPENAI_API_KEY")
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0,
+    api_key=api_key,
     callbacks=[langfuse_handler]
 )
 
@@ -31,7 +35,7 @@ class AgentState(TypedDict):
 # =========================
 
 @tool
-def translate_to_hindi(text: str) -> str:
+def translate_to_hindi(text: str):
     """Translate the given text into Hindi."""
     prompt = f"Translate the following text into Hindi:\n\n{text}"
     response = llm.invoke([HumanMessage(content=prompt)])

@@ -10,12 +10,15 @@ import httpx
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", "http://localhost:8101")
-TRANSLATOR_URL = os.getenv("TRANSLATOR_URL", "http://localhost:8102")
+api_key = os.getenv("OPENAI_API_KEY")
+
+SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", "http://127.0.0.1:8101")
+TRANSLATOR_URL = os.getenv("TRANSLATOR_URL", "http://127.0.0.1:8102")
+ANALYZER_URL = os.getenv("ANALYZER_URL", "http://127.0.0.1:8103" )
 
 AGENTS = [
     {
-        "name": "SummarizerAgent",
+        "name": "SummarizerAgent", 
         "url": SUMMARIZER_URL,
         "capabilities": ["summarization"]
     },
@@ -23,15 +26,20 @@ AGENTS = [
         "name": "TranslatorAgent",
         "url": TRANSLATOR_URL,
         "capabilities": ["translation"]
+    },
+    {
+        "name":"AnalyzerAgent",
+        "url": ANALYZER_URL,
+        "capabilities": ["analysis"]
     }
 ]
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=api_key)
 
 
 def plan_execution(query: str):
     agent_descriptions = "\n".join(
-        [f"{agent['name']} → {agent['capabilities']}" for agent in AGENTS]
+        f"{agent['name']} → {agent['capabilities']}" for agent in AGENTS
     )
 
     prompt = f"""
@@ -64,11 +72,11 @@ async def call_agent(base_url, text):
 
         create_resp = await client.post(
             f"{base_url}/create-task",
-            json={"input_text": text}
+            json={"input_text": str(text)}
         )
 
         create_data = create_resp.json()
-        task_id = create_data.get("task_id")
+        task_id = create_data.get("task_id") or create_data.get("id")
 
         if not task_id:
             return create_data
@@ -81,6 +89,6 @@ async def call_agent(base_url, text):
             status_data = status_resp.json()
 
             if status_data["status"] == "completed":
-                return status_data["result"]
+                return str(status_data.get("result", ""))
 
             await asyncio.sleep(0.5)
