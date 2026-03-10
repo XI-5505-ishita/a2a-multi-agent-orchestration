@@ -43,7 +43,7 @@ def create_task_endpoint(request: TaskCreateRequest, background_tasks: Backgroun
     return TaskCreateResponse(task_id=task_id, status="pending")
 
 
-@app.get("/task/{task_id}", response_model=TaskStatusResponse)
+@app.get("/tasks/{task_id}", response_model=TaskStatusResponse)
 def task_status(task_id: str):
     task = get_task(task_id)
 
