@@ -6,6 +6,8 @@ from langchain.tools import tool
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
 import os
+from langfuse import observe
+from langfuse.langchain import CallbackHandler
 
 api_key = os.getenv("OPENAI_API_KEY")
 
@@ -50,7 +52,7 @@ If the user asks for text analysis, use the analyzer_tool.
 """,
 )
 
-
+@observe
 async def run_agent(text: str):
     """Function that can be imported from other files"""
 
@@ -59,11 +61,3 @@ async def run_agent(text: str):
     return result["messages"][-1].content
 
 
-# if __name__ == "__main__":
-#     response = agent.invoke({
-#         "messages": [
-#             {"role": "user", "content": "Analyze this text: The product launch was risky but resulted in massive success."}
-#         ]
-#     })
-
-#     print(response["messages"][-1]["content"])

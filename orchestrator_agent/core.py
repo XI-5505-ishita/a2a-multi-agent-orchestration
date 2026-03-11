@@ -88,9 +88,9 @@ async def call_agent(base_url, text):
             return create_data
 
         while True:
-            status_resp = await client.get(f"{base_url}/tasks/{task_id}")#changes made in 92,91
-           # print("STATUS CODE:", status_resp.status_code)
-           # print("RAW RESPONSE:", status_resp.text)
+            status_resp = await client.get(f"{base_url}/tasks/{task_id}")
+            # print("STATUS CODE:", status_resp.status_code)
+            # print("RAW RESPONSE:", status_resp.text)
 
             status_data = status_resp.json()
 

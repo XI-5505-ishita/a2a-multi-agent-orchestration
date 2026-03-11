@@ -34,17 +34,10 @@ import asyncio
 import asyncio
 
 
-def process_task(task_id: str, text: str):
+async def process_task(task_id: str, text: str):
     try:
-        update_task(task_id, status="running", result=None)
-
-        response = asyncio.run(run_agent(text))
-
-        # Extract the final AI response text
-        result_text = response["messages"][-1].content
-
-        update_task(task_id, status="completed", result=result_text)
-
+        result = await run_agent(text)
+        update_task(task_id, status="completed", result=result)
     except Exception as e:
         update_task(task_id, status="failed", result=str(e))
 
