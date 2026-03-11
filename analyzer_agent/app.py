@@ -20,7 +20,7 @@ def agent_card():
         "endpoints": {"create_task": "/create-task", "task_status": "/task/{task_id}"},
     }
 
-
+x=run_agent()
 import asyncio
 
 

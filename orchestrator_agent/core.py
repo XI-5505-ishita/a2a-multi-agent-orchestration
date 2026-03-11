@@ -16,6 +16,8 @@ api_key = os.getenv("OPENAI_API_KEY")
 SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", "http://127.0.0.1:8101")
 TRANSLATOR_URL = os.getenv("TRANSLATOR_URL", "http://127.0.0.1:8102")
 ANALYZER_URL = os.getenv("ANALYZER_URL", "http://127.0.0.1:8103")
+MOM_URL = os.getenv("MOM_URL","http://127.0.0.1:8003")
+RAG_URL = os.getenv("RAG_URL","http://127.0.0.1:8001")
 
 AGENTS = [
     {
@@ -25,6 +27,17 @@ AGENTS = [
     },
     {"name": "TranslatorAgent", "url": TRANSLATOR_URL, "capabilities": ["translation"]},
     {"name": "AnalyzerAgent", "url": ANALYZER_URL, "capabilities": ["analysis"]},
+    {"name": "run_momagent" , "url" : MOM_URL, "capabilities": [
+    "meeting transcript processing",
+    "transcript cleaning and normalization",
+    "transcript-based question answering",
+    "meeting discussion analysis",
+    "information extraction from meeting transcripts"]},
+        {"name": "RagAgent" , "url" : RAG_URL, "capabilities":["PDF extraction",
+            "Text chunking",
+            "SentenceTransformers embeddings",
+            "ChromaDB vector search",
+            "LLM reasoning"]}
 ]
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=api_key)
@@ -62,7 +75,7 @@ User Query:
 
 async def call_agent(base_url, text):
     async with httpx.AsyncClient() as client:
-
+        print("CALLING URL:", f"{base_url}/create-task")
         create_resp = await client.post(
             f"{base_url}/create-task", json={"input_text": str(text)}
         )
@@ -75,9 +88,9 @@ async def call_agent(base_url, text):
             return create_data
 
         while True:
-            status_resp = await client.get(f"{base_url}/tasks/{task_id}")
-            print("STATUS CODE:", status_resp.status_code)
-            print("RAW RESPONSE:", status_resp.text)
+            status_resp = await client.get(f"{base_url}/tasks/{task_id}")#changes made in 92,91
+           # print("STATUS CODE:", status_resp.status_code)
+           # print("RAW RESPONSE:", status_resp.text)
 
             status_data = status_resp.json()
 
